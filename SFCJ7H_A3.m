@@ -73,7 +73,7 @@ function test_case(scale, angle)
     figure;
     imshow(output);
     title(sprintf('Resized and Rotated image to %.02f with %d degrees', scale, angle));
-    imwrite(output, sprintf('lena_%.02f@%.02f.png', scale, angle));
+    % imwrite(output, sprintf('lena_%.02f@%.02f.png', scale, angle));
 end
 
 test_case(4, 0)

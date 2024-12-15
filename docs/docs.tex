@@ -12,20 +12,27 @@
 \maketitle
 
 \section{Introduction}
-Image resizing and rotation are fundamental operations in image processing. They are commonly used in computer vision, graphics design, and other fields. The challenge lies in maintaining high-quality visual results while transforming an image, especially when scaling and rotating simultaneously. This document presents a method that employs Lanczos resampling to resize and rotate images in a single sampling process.
+Image resizing and rotation are fundamental operations in image processing, commonly used in computer vision and graphics. Achieving high-quality visual results while performing these transformations simultaneously poses a significant challenge. This document describes a method implemented in MATLAB, combining Lanczos resampling for resizing and rotation using a 2D transformation matrix.
 
 \section{Mathematical Model}
 
 \subsection{Lanczos Resampling}
-Lanczos resampling is a high-quality interpolation method based on the sinc function. The sinc function is defined as:
+Lanczos resampling is a high-quality interpolation method based on the sinc function, defined as:
 \[
-\text{sinc}(x) = \frac{\sin(\pi x)}{\pi x}
+\text{sinc}(x) = 
+\begin{cases} 
+1 & \text{if } x = 0 \\
+\frac{\sin(\pi x)}{\pi x} & \text{if } x \neq 0 
+\end{cases}
 \]
-The Lanczos kernel for resampling with a parameter \(A\) is given by:
+The Lanczos kernel is constructed by multiplying two sinc functions:
 \[
 w(x) = \text{sinc}(x) \cdot \text{sinc}\left(\frac{x}{A}\right)
 \]
-where \(x\) is the distance between the pixel center and the sampling point. The parameter \(A\) controls the size of the kernel, and higher values lead to smoother results but require more computation.
+where \(A\) is the kernel size parameter, controlling the range of influence of each pixel. Larger values of \(A\) yield smoother results but increase computational complexity. The kernel is truncated to \(A\) to make the computation practical:
+\[
+w(x) = 0 \quad \text{for } |x| \geq A
+\]
 
 \subsection{Rotation Transformation}
 To rotate an image by an angle \(\theta\), we use the 2D rotation matrix:
@@ -40,58 +47,58 @@ y'
 \sin(\theta) & \cos(\theta)
 \end{bmatrix}
 \begin{bmatrix}
-x \\
-y
+x - c_x \\
+y - c_y
+\end{bmatrix}
++
+\begin{bmatrix}
+c_x \\
+c_y
 \end{bmatrix}
 \]
-where \((x, y)\) are the coordinates of a point in the original image, and \((x', y')\) are the coordinates in the rotated image. The rotation matrix is applied to each pixel in the image to map the rotated coordinates back to the scaled image.
+where \((c_x, c_y)\) is the image center. The inverse rotation maps the rotated coordinates \((x', y')\) to the original image, enabling interpolation.
 
 \section{Methodology}
 
-The method combines two main operations:
+The implementation integrates resizing and rotation in a single sampling loop using Lanczos resampling. The steps are as follows:
+
 \begin{enumerate}
-    \item \textbf{Scaling:} The image is resized to the destination dimensions using Lanczos resampling, which handles high-quality interpolation.
-    \item \textbf{Rotation:} After scaling, the image is rotated using the 2D rotation matrix, adjusting the image size to fit the rotated content.
+    \item \textbf{Scaling:} The target dimensions are calculated based on the scaling factor.
+    \item \textbf{Inverse Mapping:} For each pixel in the output image, its coordinates are mapped back to the input image using the inverse rotation and scaling transformations.
+    \item \textbf{Lanczos Interpolation:} The surrounding pixels are weighted using the Lanczos kernel, summing their contributions to compute the final pixel value.
 \end{enumerate}
 
-\subsection{Steps Involved:}
+The kernel weights depend on the distance between the input and output coordinates, ensuring high-quality interpolation.
+
+\section{Test Cases and Results}
+
+The function was tested with the following configurations:
 \begin{enumerate}
-    \item The input image is first resized to the desired dimensions.
-    \item A rotation matrix is applied to rotate the image by the specified angle.
-    \item The new bounding box of the rotated image is calculated to adjust the final image size.
-    \item Lanczos resampling is used during both scaling and rotation to ensure high-quality interpolation.
-\end{enumerate}
-
-\section{Test Cases}
-
-The method was tested with three images to demonstrate its effectiveness. The images were resized and rotated as follows:
-
-\begin{enumerate}
-    \item \textbf{Test Case 1:} Resize to 4x with no rotation (0 degrees).
-    \item \textbf{Test Case 2:} Resize to 2x and rotate by 45 degrees.
-    \item \textbf{Test Case 3:} Resize to 1x and rotate by 90 degrees.
+    \item \textbf{Test Case 1:} Rescale by a factor of 4 with no rotation (0 degrees).
+    \item \textbf{Test Case 2:} Rescale by a factor of 2 and rotate by 45 degrees.
+    \item \textbf{Test Case 3:} Downscale by a factor of 0.5 and rotate by 90 degrees.
 \end{enumerate}
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.4\textwidth]{lena_4.00@0.00.png}
-    \caption{Test Case 1: Resized to x4 with no rotation.}
+    \caption{Test Case 1: Rescaled by a factor of 4 with no rotation.}
 \end{figure}
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.4\textwidth]{lena_2.00@45.00.png}
-    \caption{Test Case 2: Resized to x2 and rotated by 45 degrees.}
+    \caption{Test Case 2: Rescaled by a factor of 2 and rotated by 45 degrees.}
 \end{figure}
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.4\textwidth]{lena_0.50@90.00.png}
-    \caption{Test Case 3: Resized to x0.5 and rotated by 90 degrees.}
+    \caption{Test Case 3: Downscaled by a factor of 0.5 and rotated by 90 degrees.}
 \end{figure}
 
 \section{Conclusion}
 
-The proposed method efficiently combines resizing and rotation using a single sampling process based on Lanczos resampling. This approach provides high-quality transformations, ensuring sharpness and smoothness in the final image. The test cases demonstrated the versatility of the method for different image sizes and rotation angles.
+The described MATLAB implementation demonstrates a robust approach for simultaneous resizing and rotation. By combining Lanczos resampling with inverse mapping, the method ensures high-quality transformations, preserving image details. The test cases highlight its versatility across various scales and angles.
 
 \end{document}
