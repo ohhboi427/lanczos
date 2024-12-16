@@ -12,7 +12,7 @@
 \maketitle
 
 \section{Introduction}
-Image resizing and rotation are fundamental operations in image processing, commonly used in computer vision and graphics. Achieving high-quality visual results while performing these transformations simultaneously poses a significant challenge. This document describes a method implemented in MATLAB, combining Lanczos resampling for resizing and rotation using a 2D transformation matrix.
+Image resizing and rotation are fundamental operations in image processing, commonly used in computer vision and graphics. Achieving high-quality visual results while performing these transformations simultaneously poses a significant challenge. This document describes a method implemented in MATLAB, combining Lanczos resampling for resizing and rotation using a 2D transformation matrix. The method ensures proper scaling and alignment by calculating the bounding box for the transformed image and interpolating pixel values with high accuracy.
 
 \section{Mathematical Model}
 
@@ -56,19 +56,20 @@ c_x \\
 c_y
 \end{bmatrix}
 \]
-where \((c_x, c_y)\) is the image center. The inverse rotation maps the rotated coordinates \((x', y')\) to the original image, enabling interpolation.
+where \((c_x, c_y)\) is the image center. To ensure the rotated image fits within the output frame, the bounding box of the scaled and rotated image is calculated by transforming the corners of the scaled input image. The dimensions of this bounding box determine the size of the destination image.
 
 \section{Methodology}
 
-The implementation integrates resizing and rotation in a single sampling loop using Lanczos resampling. The steps are as follows:
+The method integrates resizing and rotation into a single sampling process using Lanczos resampling. The steps are as follows:
 
 \begin{enumerate}
-    \item \textbf{Scaling:} The target dimensions are calculated based on the scaling factor.
+    \item \textbf{Scaling:} The source image dimensions are scaled by the given factor.
+    \item \textbf{Bounding Box Calculation:} The corners of the scaled image are rotated to determine the size of the output image, ensuring the entire rotated image fits within the frame.
     \item \textbf{Inverse Mapping:} For each pixel in the output image, its coordinates are mapped back to the input image using the inverse rotation and scaling transformations.
-    \item \textbf{Lanczos Interpolation:} The surrounding pixels are weighted using the Lanczos kernel, summing their contributions to compute the final pixel value.
+    \item \textbf{Lanczos Interpolation:} The surrounding pixels in the input image are weighted using the Lanczos kernel, summing their contributions to compute the final pixel value.
 \end{enumerate}
 
-The kernel weights depend on the distance between the input and output coordinates, ensuring high-quality interpolation.
+This approach ensures high-quality results by precisely mapping and interpolating pixel values.
 
 \section{Test Cases and Results}
 
@@ -99,6 +100,6 @@ The function was tested with the following configurations:
 
 \section{Conclusion}
 
-The described MATLAB implementation demonstrates a robust approach for simultaneous resizing and rotation. By combining Lanczos resampling with inverse mapping, the method ensures high-quality transformations, preserving image details. The test cases highlight its versatility across various scales and angles.
+The described MATLAB implementation combines Lanczos resampling with inverse mapping and bounding box adjustments to perform high-quality resizing and rotation. The method ensures that the entire image fits within the output frame, preserving image details and achieving visually accurate transformations. The test cases demonstrate the method's reliability across a range of scales and rotation angles.
 
 \end{document}

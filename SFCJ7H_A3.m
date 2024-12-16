@@ -1,7 +1,34 @@
 function dest = lanczos_resize(img, scale, angle)
     [src_h, src_w, num_channels] = size(img);
-    dest_w = src_w * scale;
-    dest_h = src_h * scale;
+
+    scaled_w = src_w * scale;
+    scaled_h = src_h * scale;
+
+    corners = [
+        -scaled_w / 2, -scaled_h / 2;
+         scaled_w / 2, -scaled_h / 2;
+         scaled_w / 2,  scaled_h / 2;
+        -scaled_w / 2,  scaled_h / 2
+    ];
+
+    rotation_matrix = [cosd(angle), -sind(angle); sind(angle), cosd(angle)];
+
+    rotated_corners = (rotation_matrix * corners')';
+    min_x = min(rotated_corners(:, 1));
+    max_x = max(rotated_corners(:, 1));
+    min_y = min(rotated_corners(:, 2));
+    max_y = max(rotated_corners(:, 2));
+
+    dest_w = ceil(max_x - min_x);
+    dest_h = ceil(max_y - min_y);
+
+    dest = uint8(zeros(dest_h, dest_w, num_channels));
+
+    scale_x = src_w / scaled_w;
+    scale_y = src_h / scaled_h;
+
+    center_x = dest_w / 2;
+    center_y = dest_h / 2;
 
     function y = sinc(x)
         if x == 0
@@ -21,21 +48,17 @@ function dest = lanczos_resize(img, scale, angle)
 
     A = 3; % Kernel size parameter
 
-    rotation_matrix = [cosd(angle), -sind(angle); sind(angle), cosd(angle)];
-
-    dest = uint8(zeros(dest_h, dest_w, num_channels));
-
-    scale_x = src_w / dest_w;
-    scale_y = src_h / dest_h;
-
     for v = 1:dest_h
         for u = 1:dest_w
-            scaled_x = (u - 1) * scale_x + 1;
-            scaled_y = (v - 1) * scale_y + 1;
+            dx = (u - center_x);
+            dy = (v - center_y);
 
-            rotated_coords = rotation_matrix \ [(scaled_x - src_w / 2); (scaled_y - src_h / 2)];
-            src_x = rotated_coords(1) + src_w / 2;
-            src_y = rotated_coords(2) + src_h / 2;
+            rotated_coords = rotation_matrix \ [dx; dy];
+            scaled_x = rotated_coords(1);
+            scaled_y = rotated_coords(2);
+
+            src_x = scaled_x * scale_x + src_w / 2;
+            src_y = scaled_y * scale_y + src_h / 2;
 
             pixel_sum = zeros(1, num_channels);
             weight_sum = 0;
@@ -45,7 +68,7 @@ function dest = lanczos_resize(img, scale, angle)
                     if dy < 1 || dy > src_h || dx < 1 || dx > src_w
                         continue;
                     end
-                    
+
                     w = lanczos_kernel(src_x - dx, A) * lanczos_kernel(src_y - dy, A);
 
                     for c = 1:num_channels
@@ -72,10 +95,10 @@ function test_case(scale, angle)
 
     figure;
     imshow(output);
-    title(sprintf('Resized and Rotated image to %.02f with %d degrees', scale, angle));
+    title(sprintf('Resized (%.2f) and Rotated (%d°) Image', scale, angle));
     % imwrite(output, sprintf('lena_%.02f@%.02f.png', scale, angle));
 end
 
-test_case(4, 0)
-test_case(2, 45)
-test_case(0.5, 90)
+test_case(4, 0);
+test_case(2, 45);
+test_case(0.5, 90);
